@@ -3,12 +3,18 @@
 #include <windows.h>
 
 bool gameOver;
+int score;
 int width{ 40 }, height{ 17 };
 int planeY, planeX;
 int enemyY, enemyX;
 int bulletX [10], bulletY [10];						//need to find way to make an array with 0 size, and append array every shoot.
 int bulletNum{ 0 };
-bool isDead;
+int enemyBulletX[10], enemyBulletY[10];						//need to find way to make an array with 0 size, and append array every shoot.
+int enemyBulletNum{ 0 };
+bool isEnemyDead;
+int enemyShootWaitCounter;
+int enemyDeadWaitCounter;
+int enemySpawn;
 
 enum eDirection
 {
@@ -17,14 +23,24 @@ enum eDirection
 eDirection dir;
 eDirection prevDir;
 
+enum eEnemyDirection
+{
+	ESTOP = 0, ELEFT, ERIGHT, ESHOOT
+};
+eEnemyDirection enemyDir;
+
 void Setup()
 {
+	srand((int)time(0));
 	gameOver = false;
-	isDead = false;
+	isEnemyDead = false;
 	planeY = 15;
 	planeX = width / 2;
 	enemyY = 2;
-	enemyX = width / 2;
+	enemySpawn = rand() % 21 + 8;
+	enemyX = enemySpawn;
+	enemyDir = ERIGHT;
+	enemyShootWaitCounter = 0;
 }
 
 bool DrawBullet(int i, int j)
@@ -73,6 +89,59 @@ bool DrawEnemy(int i, int j)
 	}
 }
 
+bool DrawEnemyBullet(int i, int j)
+{
+	for (int k = 0; k < sizeof(enemyBulletX) / sizeof(int); k++)
+	{
+		if (j == enemyBulletX[k] && i == enemyBulletY[k])
+		{
+			std::cout << '|';
+			return true;
+		}
+	}
+	return false;
+}
+
+bool DrawPlane(int i, int j)
+{
+	if (i == planeY && j == planeX)
+	{
+		std::cout << 'O';
+		return true;
+	}
+	else if (i == planeY && j == planeX - 1)
+	{
+		std::cout << '<';
+		return true;
+	}
+	else if (i == planeY && j == planeX + 1)
+	{
+		std::cout << '>';
+		return true;
+	}
+	else if (i == planeY + 1 && j == planeX)
+	{
+		std::cout << '^';
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+void DrawGrid(int i, int j)
+{
+	if (j == 0 || j == width - 1)
+	{
+		std::cout << '#';
+	}
+	else
+	{
+		std::cout << ' ';
+	}
+}
+
 void Draw()
 {
 	system("CLS");
@@ -87,40 +156,26 @@ void Draw()
 	{
 		for (int j = 0; j < width; j++)
 		{
-			bool foundBullet = DrawBullet(i, j);
+			bool foundObject = DrawBullet(i, j);
 
-			bool foundEnemy = false;
-			if (!foundBullet && !isDead)
+			if (!foundObject && !isEnemyDead)
 			{
-				foundEnemy = DrawEnemy(i, j);
+				foundObject = DrawEnemy(i, j);
 			}
 
-			if (!foundBullet && !foundEnemy)
+			if (!foundObject)
 			{
-				if (j == 0 || j == width - 1)
-				{
-					std::cout << '#';
-				}
-				else if (i == planeY && j == planeX)
-				{
-					std::cout << 'O';
-				}
-				else if (i == planeY && j == planeX - 1)
-				{
-					std::cout << '<';
-				}
-				else if (i == planeY && j == planeX + 1)
-				{
-					std::cout << '>';
-				}
-				else if (i == planeY + 1 && j == planeX)
-				{
-					std::cout << '^';
-				}
-				else
-				{
-					std::cout << ' ';
-				}
+				foundObject = DrawEnemyBullet(i, j);
+			}
+
+			if (!foundObject)
+			{
+				foundObject = DrawPlane(i, j);
+			}
+
+			if (!foundObject)
+			{
+				DrawGrid(i, j);
 			}
 		}
 		std::cout << '\n';
@@ -131,6 +186,8 @@ void Draw()
 		std::cout << '#';
 	}
 	std::cout << '\n';
+	std::cout << '\n';
+	std::cout << "Score: " << score;
 }
 
 void Input()
@@ -152,6 +209,62 @@ void Input()
 			break;
 		default:
 			break;
+		}
+	}
+}
+
+void EnemyAI()
+{
+	if (!isEnemyDead)
+	{
+		if (enemyX >= enemySpawn + 4)
+		{
+			enemyDir = ELEFT;
+		}
+		else if (enemyX <= enemySpawn - 4)
+		{
+			enemyDir = ERIGHT;
+		}
+
+		if (++enemyShootWaitCounter == 5)
+		{
+			enemyBulletX[enemyBulletNum] = enemyX;						//add to array
+			enemyBulletY[enemyBulletNum] = enemyY + 1;
+			if (++enemyBulletNum > 10)
+			{
+				enemyBulletNum = 0;
+			}
+			enemyShootWaitCounter = 0;
+		}
+
+		switch (enemyDir)
+		{
+		case ELEFT:
+			enemyX--;
+			break;
+		case ERIGHT:
+			enemyX++;
+			break;
+		default:
+			break;
+		}
+	}
+	else
+	{
+		if (++enemyDeadWaitCounter == 8)
+		{
+			enemySpawn = rand() % 21 + 8;
+			isEnemyDead = false;
+			enemyDeadWaitCounter = 0;
+		}
+	}
+
+	for (int k = 0; k < sizeof(enemyBulletX) / sizeof(int); k++)
+	{
+		enemyBulletY[k] = enemyBulletY[k] + 2;
+		if (enemyBulletY[k] == planeY && enemyBulletX[k] == planeX)
+		{
+			gameOver = true;
 		}
 	}
 }
@@ -184,7 +297,10 @@ void Logic()
 		dir = prevDir;
 		bulletX[bulletNum] = planeX;						//add to array
 		bulletY[bulletNum] = planeY - 1;
-		bulletNum++;
+		if (++bulletNum > 10)
+		{
+			bulletNum = 0;
+		}
 		break;
 	}
 
@@ -193,9 +309,13 @@ void Logic()
 		bulletY[k] = bulletY[k] - 2;
 		if (bulletY[k] == enemyY && bulletX[k] == enemyX)
 		{
-			isDead = true;
+			isEnemyDead = true;
+			score = score + 10;
 		}
-	}															//for loop through all elements of array.
+	}
+
+	EnemyAI();
+
 }
 
 int main()
@@ -209,5 +329,14 @@ int main()
 		Logic();
 		Sleep(100);
 	}
+	system("CLS");
+	std::cout << "Score: " << score << '\n';
+	std::cout << R"(   _____          __  __ ______    ______      ________ _____  _ 
+  / ____|   /\   |  \/  |  ____|  / __ \ \    / /  ____|  __ \| |
+ | |  __   /  \  | \  / | |__    | |  | \ \  / /| |__  | |__) | |
+ | | |_ | / /\ \ | |\/| |  __|   | |  | |\ \/ / |  __| |  _  /| |
+ | |__| |/ ____ \| |  | | |____  | |__| | \  /  | |____| | \ \|_|
+  \_____/_/    \_\_|  |_|______|  \____/   \/   |______|_|  \_(_))";
+	Sleep(5000);
 	return 0;
 }
