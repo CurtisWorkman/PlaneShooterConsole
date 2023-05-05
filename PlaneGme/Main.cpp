@@ -2,24 +2,76 @@
 #include <conio.h>
 #include <windows.h>
 
-bool gameOver{ false };
-int width{ 70 }, height{ 20 };
+bool gameOver;
+int width{ 40 }, height{ 17 };
 int planeY, planeX;
-int bulletX, bulletY;						//should be integer arrays to allow multiple bullets. Then loop through the arrays to show how many bullets.
+int enemyY, enemyX;
+int bulletX [10], bulletY [10];						//need to find way to make an array with 0 size, and append array every shoot.
+int bulletNum{ 0 };
+bool isDead;
 
 enum eDirection
 {
-	STOP, UP, DOWN, SHOOT
+	STOP = 0, LEFT, RIGHT, SHOOT
 };
 eDirection dir;
-
+eDirection prevDir;
 
 void Setup()
 {
-	planeY = height / 2;
-	planeX = 15;
+	gameOver = false;
+	isDead = false;
+	planeY = 15;
+	planeX = width / 2;
+	enemyY = 2;
+	enemyX = width / 2;
 }
 
+bool DrawBullet(int i, int j)
+{
+	for (int k = 0; k < sizeof(bulletX) / sizeof(int); k++)
+	{
+		if (j == bulletX[k] && i == bulletY[k])
+		{
+			std::cout << '|';
+			return true;
+		}
+	}
+	return false;
+} 
+
+bool DrawEnemy(int i, int j)
+{
+	if (i == enemyY && j == enemyX)
+	{
+		std::cout << 'o';
+		return true;
+	}
+	else if (i == enemyY && j == enemyX + 1)
+	{
+		std::cout << '>';
+		return true;
+	}
+	else if (i == enemyY && j == enemyX + 2)
+	{
+		std::cout << '>';
+		return true;;
+	}
+	else if (i == enemyY && j == enemyX - 1)
+	{
+		std::cout << '<';
+		return true;
+	}
+	else if (i == enemyY && j == enemyX - 2)
+	{
+		std::cout << '<';
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
 
 void Draw()
 {
@@ -35,21 +87,40 @@ void Draw()
 	{
 		for (int j = 0; j < width; j++)
 		{
-			if (j == 0 || j == width - 1)
+			bool foundBullet = DrawBullet(i, j);
+
+			bool foundEnemy = false;
+			if (!foundBullet && !isDead)
 			{
-				std::cout << '#';
+				foundEnemy = DrawEnemy(i, j);
 			}
-			else if (i == planeY && j == planeX)
+
+			if (!foundBullet && !foundEnemy)
 			{
-				std::cout << 'O';
-			}
-			else if (i == bulletY && j == bulletX)				//for loop through all elements in bullet array.
-			{
-				std::cout << '-';
-			}
-			else
-			{
-				std::cout << ' ';
+				if (j == 0 || j == width - 1)
+				{
+					std::cout << '#';
+				}
+				else if (i == planeY && j == planeX)
+				{
+					std::cout << 'O';
+				}
+				else if (i == planeY && j == planeX - 1)
+				{
+					std::cout << '<';
+				}
+				else if (i == planeY && j == planeX + 1)
+				{
+					std::cout << '>';
+				}
+				else if (i == planeY + 1 && j == planeX)
+				{
+					std::cout << '^';
+				}
+				else
+				{
+					std::cout << ' ';
+				}
 			}
 		}
 		std::cout << '\n';
@@ -64,19 +135,20 @@ void Draw()
 
 void Input()
 {
-	if (_kbhit)
+	if (_kbhit())
 	{
 		switch (_getch())
 		{
-		case 'w':
-			dir = UP;
+		case 'a':
+			dir = LEFT;
+			prevDir = LEFT;
 			break;
-		case 's':
-			dir = DOWN;
+		case 'd':
+			dir = RIGHT;
+			prevDir = RIGHT;
 			break;
-		case 't':
-			bulletX = planeX + 1;						//add to array
-			bulletY = planeY;
+		case ' ':
+			dir = SHOOT;
 			break;
 		default:
 			break;
@@ -88,31 +160,42 @@ void Logic()
 {
 	switch (dir)
 	{
-	case UP:
-		if (planeY - 1 == 0)
+	case LEFT:
+		if (planeX - 2 == 0)
 		{
 			break;
 		}
 		else
 		{
-			planeY--;
-			break;
+			planeX--;
+			break;;
 		}
-	case DOWN:
-		if (planeY + 1 == height)
+	case RIGHT:
+		if (planeX + 3  == width)
 		{
 			break;
 		}
 		else
 		{
-			planeY++;
+			planeX++;
 			break;
 		}
-	default:
+	case SHOOT:
+		dir = prevDir;
+		bulletX[bulletNum] = planeX;						//add to array
+		bulletY[bulletNum] = planeY - 1;
+		bulletNum++;
 		break;
 	}
 
-	bulletX++;										//for loop through all elements of array.
+	for (int k = 0; k < sizeof(bulletX) / sizeof(int); k++)
+	{
+		bulletY[k] = bulletY[k] - 2;
+		if (bulletY[k] == enemyY && bulletX[k] == enemyX)
+		{
+			isDead = true;
+		}
+	}															//for loop through all elements of array.
 }
 
 int main()
