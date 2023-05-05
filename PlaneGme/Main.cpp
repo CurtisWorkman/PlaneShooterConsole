@@ -15,6 +15,7 @@ bool isEnemyDead;
 int enemyShootWaitCounter;
 int enemyDeadWaitCounter;
 int enemySpawn;
+int playerHealth;
 
 enum eDirection
 {
@@ -41,6 +42,7 @@ void Setup()
 	enemyX = enemySpawn;
 	enemyDir = ERIGHT;
 	enemyShootWaitCounter = 0;
+	playerHealth = 3;
 }
 
 bool DrawBullet(int i, int j)
@@ -188,6 +190,12 @@ void Draw()
 	std::cout << '\n';
 	std::cout << '\n';
 	std::cout << "Score: " << score;
+	std::cout << '\n';
+	std::cout << '\n';
+	for (int i = 0; i < playerHealth; i++)
+	{
+		std::cout << 'H';
+	}
 }
 
 void Input()
@@ -262,9 +270,13 @@ void EnemyAI()
 	for (int k = 0; k < sizeof(enemyBulletX) / sizeof(int); k++)
 	{
 		enemyBulletY[k] = enemyBulletY[k] + 2;
-		if (enemyBulletY[k] == planeY && enemyBulletX[k] == planeX)
+		if (enemyBulletY[k] == planeY && (enemyBulletX[k] == planeX || enemyBulletX[k] == planeX - 1 || enemyBulletX[k] == planeX + 1))
 		{
-			gameOver = true;
+			playerHealth--;
+			if (playerHealth == 0)
+			{
+				gameOver = true;
+			}
 		}
 	}
 }
@@ -307,7 +319,7 @@ void Logic()
 	for (int k = 0; k < sizeof(bulletX) / sizeof(int); k++)
 	{
 		bulletY[k] = bulletY[k] - 2;
-		if (bulletY[k] == enemyY && bulletX[k] == enemyX)
+		if (bulletY[k] == enemyY && (bulletX[k] == enemyX || bulletX[k] == enemyX + 1 || bulletX[k] == enemyX + 2 || bulletX[k] == enemyX - 1 || bulletX[k] == enemyX - 2))
 		{
 			isEnemyDead = true;
 			score = score + 10;
