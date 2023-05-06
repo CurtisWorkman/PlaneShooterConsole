@@ -1,4 +1,4 @@
-#include <iostream>
+﻿#include <iostream>
 #include <conio.h>
 #include <windows.h>
 
@@ -234,7 +234,7 @@ void EnemyAI()
 			enemyDir = ERIGHT;
 		}
 
-		if (++enemyShootWaitCounter == 5)
+		if (++enemyShootWaitCounter == 8)
 		{
 			enemyBulletX[enemyBulletNum] = enemyX;						//add to array
 			enemyBulletY[enemyBulletNum] = enemyY + 1;
